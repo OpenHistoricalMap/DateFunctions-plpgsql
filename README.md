@@ -1,74 +1,40 @@
-## Provided SQL Functions
+# OpenHistoricalMap Date Functions
 
-```
-isleapyear(year varchar)
-isleapyear(year integer)
-```
+These Pl/PgSQL functions provide for PostgreSQL, certain utility functions used by OpenHistoricalMap for representing dates beyond the typical range of Julian and Unix epochs. The intent here is to be able to represent very large dates such as 100,000 BCE in a numeric fashion so they may be compared using simple mathematical filters such as `<=` and `>=` Underlying libraries tend to have a limited range of dates, and to have trouble calculating beyond the Unix epoch or Julian day 0.
 
-```
-howmanydaysinyear(year varchar)
-howmanydaysinyear(year integer)
-```
+Functions are provided to work with these two broad issues in date information contributed to OHM:
+* Representing dates as a universal numeric format, which can exceed the typical epoch bounds. Representations such as Julian day and Unix epoch have limitations which would not cover pre-historic times such as 25,000 BCE. Thus, the decimal date representation in which the year is kept as-given and the month-and-day are converted into a decimal portion, yielding dates such as _-44.796448_ (March 15, 44 BCE). This is similar to the R `decimal_date()` function, except that it does not convert to an epoch and therefore works with extreme dates.
+* Expanding partial dates such as _2000_ for use as filtering "bookends". When 2000 is used as a starting date for filtering we want to treat it as _2000-01-01_, and when used as an end date for filtering we want to treat it as _2000-12-31_ By "casting" these partial dates as full dates for each specific use case, we can treat these partial dates as a filter-capable range of dates, without requiring the contributors to supply "false accuracy" such as manually entering "-01-01" onto their dates.
 
-```
-howmanydaysinmonth(year integer, month integer)
-howmanydaysinmonth(year varchar, month varchar)
-howmanydaysinmonth(year integer, month varchar)
-howmanydaysinmonth(year varchar, month integer)
-```
+### Provided SQL Functions
 
-```
-pad_date(datelikestring varchar, startend varchar = 'start')
-```
+Unless stated otherwise, all functions presume a proleptic Gregorian calendar. That is, 365 days per year except for leap years which have a 29th day in February.
 
-`datelikestring` 
-`startend` 
+Unless stated otherwise, all functions are overloaded so they can accept year and month parameters as `integer` and/or `varchar` data types. This is indicated in the examples below, where we are capricious with passing numeric or string values.
+
+* `(boolean) isleapyear(year)`
+Indicate whether the given year would be a leap year.
+Example: `SELECT isleapyear('-10191')` returns _false_ since the year 10,191 BCE would not have been a leap year.
+
+* `(integer) howmanydaysinyear(year)`
+Return the number of days in this year.
+Example: `SELECT howmanydaysinyear(-2000)` returns _366_ since 2,000 BCE would have been a leap year.
+
+* `(integer) howmanydaysinmonth(year, month)`
+Return the number of days in this month.
+Example: `SELECT howmanydaysinmonth('-2000', 2)` returns _29_ since 2000 BCE would have been a leap year.
+
+* `(varchar) pad_date(datelikestring varchar, startend varchar = 'start')`
+Pad an incomplete date, and return an ISO-formatted date string indicating the first or last day of the month (if a year and month were given) or of the year (if only a year were given). The `startend` is either **start** or else **end** indicating which "side of the bookend" to represent.
+Example: `SELECT pad_date('20000-02', 'end')` returns _20000-02-29_ since the year 20,000 CE would be a leap year.
+Example: `SELECT pad_date('-15232', 'start')` returns _-15232-01-01_ representing the first day of that year.
 
 
-### Tests and Demos
+### Year 0 and Subtracting Decimal Dates
 
-```
--- tests: these are not leap years; both integer and string versions
-SELECT isleapyear('1900'), isleapyear(1900), isleapyear('-1900'), isleapyear(-1900), howmanydaysinyear(1900), howmanydaysinyear('-1900');
-SELECT isleapyear('1863'), isleapyear(1863), isleapyear('-1863'), isleapyear(-1863), howmanydaysinyear(1863), howmanydaysinyear('-1863');
+The Gregorian calendar has no year 0. The morning after Dec 31 of 1 BCE would be Jan 1 of 1 CE, without a span of two years having passed (-1 to 0, and 0 to +1).
 
--- tests: these are leap years; both integer and string versions
-SELECT isleapyear('20000'), isleapyear(20000), isleapyear('-20000'), isleapyear(-20000), howmanydaysinyear(20000), howmanydaysinyear('-20000');
-SELECT isleapyear('1684'), isleapyear(1684), isleapyear('-1684'), isleapyear(-1684), howmanydaysinyear(1684), howmanydaysinyear('-1684');
+This is important to keep in mind when trying to subtract one date from another, and crossing the CE/BCE boundary: **You must subtract 2 years from the mathematical difference to find the real difference.**
 
--- tests: how many days in these months? in particular, extreme BCE leap years
-SELECT howmanydaysinmonth(2000, 2), howmanydaysinmonth('2000', '02'), howmanydaysinmonth('2000', 2), howmanydaysinmonth(2000, '2');
-SELECT howmanydaysinmonth(1900, 2), howmanydaysinmonth('1900', '02'), howmanydaysinmonth('1900', 2), howmanydaysinmonth(1900, '2');
-SELECT howmanydaysinmonth(-22000, 2), howmanydaysinmonth('-22000', '02'), howmanydaysinmonth('-22000', 2), howmanydaysinmonth(-22000, '2');
-SELECT howmanydaysinmonth(-21900, 2), howmanydaysinmonth('-21900', '02'), howmanydaysinmonth('-21900', 2), howmanydaysinmonth(-21900, '2');
+This is a known issue with calculating differences across the BCE/CE boundary, and is not novel to this expression of dates as decimal format.
 
--- tests: bad startend param raises an exception
-SELECT pad_date('', 'nope');
-
--- tests: leading + should be stripped but leading - should remain negative
-SELECT pad_date('+2000-07-02'::varchar), pad_date('-2000-07-02'::varchar);
-
--- tests: some dates that should come back as-given
--- meaning already-good or blank/null
-SELECT pad_date('', 'start'), pad_date(null, 'end');
-SELECT pad_date('2018-02-29'::varchar, 'start'), pad_date('-5000-07-02'::varchar, 'end');
-
--- tests: a few badly malformed dates that should come back empty
--- and should rase some NOTICE messages apprising of the weirdness
-SELECT pad_date('never'::varchar), pad_date('before 100 BC'), pad_date('unknown');
-
--- tests: start/end of some years, CE with and without + sign and and BCE
-SELECT pad_date('+2000', 'start'), pad_date('+2000', 'end');
-SELECT pad_date('2000', 'start'), pad_date('2000', 'end');
-SELECT pad_date('-2000', 'start'), pad_date('-2000', 'end');
-SELECT pad_date('-1000000', 'start'), pad_date('-1000000', 'end');
-
--- tests: start/end day of a given month, especially CE and BCE leap years
-SELECT pad_date('+2000-02', 'start'), pad_date('+2000-02', 'end');
-SELECT pad_date('1900-02', 'start'), pad_date('1900-02', 'end');
-SELECT pad_date('-2000-02', 'start'), pad_date('-2000-02', 'end');
-SELECT pad_date('-21900-02', 'start'), pad_date('-21900-02', 'end');
-
--- try with some real data and see how it cleans up
-SELECT start_date, end_date, pad_date(start_date, 'start'), pad_date(end_date, 'end') FROM osm_building_polygon WHERE start_date != '';
-```
