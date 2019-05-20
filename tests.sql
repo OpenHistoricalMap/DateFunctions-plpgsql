@@ -77,6 +77,18 @@ DO $$ BEGIN assert (   SELECT not isvalidmonthday(2999, 1, '-2')   );END;$$;
 DO $$ BEGIN assert (   SELECT not SELECT isvalidmonthday(2999, 13, 1)   );END;$$;
 DO $$ BEGIN assert (   SELECT not SELECT isvalidmonthday(2999, -1, 1)   );END;$$;
 
+DO $$ BEGIN RAISE INFO 'Testing: yday()';END;$$;
+DO $$ BEGIN assert (   SELECT yday(1900, 1, 1) = 1   );END;$$;
+DO $$ BEGIN assert (   SELECT yday(1900, 12, 31) = 365   );END;$$;
+DO $$ BEGIN assert (   SELECT yday(2000, 12, 31) = 366   );END;$$;
+DO $$ BEGIN assert (   SELECT yday('-1700', 1, 1) = 1   );END;$$;
+DO $$ BEGIN assert (   SELECT yday('-1700', 12, '31') = 365   );END;$$;
+DO $$ BEGIN assert (   SELECT yday('-2000', '12', 31) = 366   );END;$$;
+DO $$ BEGIN assert (   SELECT yday(-1600, '12', '31') = 366   );END;$$;
+DO $$ BEGIN assert (   SELECT yday('-1599', '12', '31') = 365   );END;$$;
+DO $$ BEGIN assert (   SELECT yday(-21599, 12, '31') = 365   );END;$$;
+DO $$ BEGIN assert (   SELECT yday(21599, '12', 31) = 365   );END;$$;
+
 DO $$ BEGIN RAISE INFO 'Testing: pad_date() passthroughs';END;$$;
 DO $$ BEGIN assert (   SELECT pad_date('', 'start') = ''   );END;$$;
 DO $$ BEGIN assert (   SELECT pad_date(null, 'end') is null   );END;$$;
