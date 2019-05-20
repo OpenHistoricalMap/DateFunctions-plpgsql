@@ -77,6 +77,10 @@ DO $$ BEGIN assert (   SELECT not isvalidmonthday(2999, 1, '-2')   );END;$$;
 DO $$ BEGIN assert (   SELECT not SELECT isvalidmonthday(2999, 13, 1)   );END;$$;
 DO $$ BEGIN assert (   SELECT not SELECT isvalidmonthday(2999, -1, 1)   );END;$$;
 
+DO $$ BEGIN RAISE INFO 'Testing: splitdatestring()';END;$$;
+DO $$ BEGIN assert (   SELECT splitdatestring('2000-12-31') = ARRAY[2000,12,31]   );END;$$;
+DO $$ BEGIN assert (   SELECT splitdatestring('-12000-02-29') = ARRAY[-12000,2,29]   );END;$$;
+
 DO $$ BEGIN RAISE INFO 'Testing: yday()';END;$$;
 DO $$ BEGIN assert (   SELECT yday(1900, 1, 1) = 1   );END;$$;
 DO $$ BEGIN assert (   SELECT yday(1900, 12, 31) = 365   );END;$$;
@@ -120,6 +124,17 @@ DO $$ BEGIN assert (   SELECT pad_date('+2000-02'::varchar, 'end') = '2000-02-29
 DO $$ BEGIN assert (   SELECT pad_date('-2000-02'::varchar, 'end') = '-2000-02-29'   );END;$$;
 DO $$ BEGIN assert (   SELECT pad_date('+19900-02'::varchar, 'end') = '19900-02-28'   );END;$$;
 DO $$ BEGIN assert (   SELECT pad_date('-19900-02'::varchar, 'end') = '-19900-02-28'   );END;$$;
+
+DO $$ BEGIN RAISE INFO 'Testing: isodatetodecimaldate()';END;$$;
+DO $$ BEGIN assert (   SELECT isodatetodecimaldate('2000-01-01') = 2000.001366   );END;$$;
+DO $$ BEGIN assert (   SELECT isodatetodecimaldate('2000-12-31') = 2000.998634   );END;$$;
+DO $$ BEGIN assert (   SELECT isodatetodecimaldate('1999-01-01') = 1999.001370   );END;$$;
+DO $$ BEGIN assert (   SELECT isodatetodecimaldate('+1999-12-31') = 1999.998630   );END;$$;
+DO $$ BEGIN assert (   SELECT isodatetodecimaldate('+1999-07-01') = 1999.497260   );END;$$;
+DO $$ BEGIN assert (   SELECT isodatetodecimaldate('-2000-01-01') = -2000.998634   );END;$$;
+DO $$ BEGIN assert (   SELECT isodatetodecimaldate('-2000-12-31') = -2000.001366   );END;$$;
+DO $$ BEGIN assert (   SELECT isodatetodecimaldate('-1000000-01-01') = -1000000.998634   );END;$$;
+DO $$ BEGIN assert (   SELECT isodatetodecimaldate('-1000000-12-31') = -1000000.001366   );END;$$;
 
 DO $$ BEGIN RAISE INFO 'All tests done.';END;$$;
 ROLLBACK;

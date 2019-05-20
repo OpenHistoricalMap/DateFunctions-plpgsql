@@ -356,6 +356,86 @@ LANGUAGE plpgsql;
 
 
 --
+-- splitdate(datestring)
+-- split a ISO-shaped string into year, month, day array of integers
+-- heed a leading - sign as negative year; accept and discard a leading + sign for positive
+--
+
+CREATE OR REPLACE FUNCTION splitdatestring(
+    datestring VARCHAR
+)
+RETURNS integer array[3] AS $$
+DECLARE
+    yearint INTEGER;
+    monthint INTEGER;
+    dayint INTEGER;
+BEGIN
+    -- split the string, heeding any leading - sign
+    -- implicitly cast to integer
+    SELECT splitdate[1], splitdate[2], splitdate[3] into yearint, monthint, dayint
+    FROM (
+        SELECT ARRAY_AGG(splitdate) splitdate
+        FROM (
+            SELECT UNNEST(REGEXP_MATCHES(datestring, '^(\-?\+?\d+)\-(\d\d)\-(\d\d)$')) splitdate
+        ) y
+    ) x;
+
+    RETURN ARRAY[yearint, monthint, dayint];
+END;
+$$
+LANGUAGE plpgsql;
+
+
+--
+-- isodatetodecimaldate(datestring)
+-- translate the ISO-shaped date string into a decimal year`
+--
+
+CREATE OR REPLACE FUNCTION isodatetodecimaldate(
+    datestring VARCHAR
+)
+RETURNS float AS $$
+DECLARE
+    yearint INTEGER;
+    monthint INTEGER;
+    dayint INTEGER;
+    splitdate INTEGER ARRAY[3];
+    daynumber FLOAT;
+    decibit FLOAT;
+    daysinyear INTEGER;
+    decimaldate FLOAT;
+BEGIN
+    -- split up the date into three integers
+    splitdate := splitdatestring(datestring);
+    yearint := splitdate[1];
+    monthint := splitdate[2];
+    dayint := splitdate[3];
+    IF NOT isvalidmonthday(yearint, monthint, dayint) THEN
+        RAISE EXCEPTION 'Not a valid date %, %, %', yearint, monthint, dayint;
+    END IF;
+
+    -- this is the Nth day of a N-day-long year
+    -- for decimal purposes, subtract 0.5 days to force noon on the day (Jan 1 = 0.5)
+    daynumber := yday(yearint, monthint, dayint)::float - 0.5;
+    daysinyear := howmanydaysinyear(yearint);
+
+    -- divide to get a decimal; invert this if year is <0
+    -- larger negative value = further from 0, right? Jan 1 -1000 is -1000.999 but Jan 1 1000 is 1000.001
+    decibit = daynumber / daysinyear;
+    IF yearint >= 0 THEN
+        decimaldate = yearint::float + decibit;
+    ELSE
+        decimaldate = yearint::float - (1 - decibit);
+    END IF;
+
+    -- standardize on 6 decimals, that's more than plenty for 1 part in 366
+    RETURN ROUND(decimaldate::numeric, 6);
+END;
+$$
+LANGUAGE plpgsql;
+
+
+--
 -- pad_date(datestring, startend)
 -- pad out a truncated date with only year or a month, to a full year-month-day date
 -- specify whether you want to pad it to the first day or last day of that year/month

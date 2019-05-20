@@ -18,16 +18,27 @@ Pad an incomplete date, and return an ISO-formatted date string indicating the f
 Example: `SELECT pad_date('20000-02', 'end')` returns _20000-02-29_ since the year 20,000 CE would be a leap year.
 Example: `SELECT pad_date('-15232', 'start')` returns _-15232-01-01_ representing the first day of that year.
 
+* `(float) isodatetodecimaldate(datestring)`
+Parse an ISO-shaped date string, and return the date in decimal representation.
+Example: `SELECT isodatetodecimaldate(2000-01-01)` returns _2000.001366_
+Example: `SELECT isodatetodecimaldate(2000-12-31)` returns _2000.998634_
+Example: `SELECT isodatetodecimaldate(-2000-01-01)` returns _-2000.998634_ Note that January for CE years is more negative than December, being further from the 0 origin.
+Example: `SELECT isodatetodecimaldate(-2000-12-31)` returns _-2000.001366_ Note that December for CE years is less negative than December, being closer to the 0 origin.
 
 * `(float) yday(year, month, day)`
 Return the day of the year which this date woud have been; similar to `yday` in other date implementations.
-Example: `yday(1900, 1, 1)` would return 1 since January 1 is the first day of the year.
-Example: `yday(1900, 12, 31)` would return 365 since this is the 365th day of the year.
-Example: `yday(2000, 12, 31)` would return 366 since this is the 366th day of the year (2000 was a leap year).
+Example: `yday(1900, 1, 1)` returns 1 since January 1 is the first day of the year.
+Example: `yday(1900, 12, 31)` returns 365 since this is the 365th day of the year.
+Example: `yday(2000, 12, 31)` returns 366 since this is the 366th day of the year (2000 was a leap year).
+
+* `(integer array[3]) splitdatestring(datelikestring)`
+Split the date-shaped ISO string into an array of integers: year, month, day. This will heed any leading - sign as indicating a negative year, and will accept and silently discard a leading + sign indicating a positive year.
+Example: `SELECT splitdatestring('-20000-02-29')` returns _{-20000,2,29}_
 
 * `(boolean) isleapyear(year)`
 Indicate whether the given year would be a leap year.
 Example: `SELECT isleapyear('-10191')` returns _false_ since the year 10,191 BCE would not have been a leap year.
+Example: `SELECT isleapyear(10192)` returns _true_ since the year 10,192 BCE would be a leap year.
 
 * `(integer) howmanydaysinyear(year)`
 Return the number of days in this year.
@@ -57,3 +68,22 @@ This is important to keep in mind when trying to subtract one date from another,
 
 This is a known issue with calculating differences across the BCE/CE boundary, and is not novel to this expression of dates as decimal format.
 
+
+### Our Use Case and Technical Challenges
+
+At OpenHistoricalMap, for the purpose of filtering vector tiles, we needed a method of converting dates into a number which could be unequivocally compared as `>=` and `<=`.
+
+* Dates in ISO 8601 string format such as _2000-01-01_ fall flat when dealing with BCE dates, e.g. _-2500-01-01_ is greater than _-2499-12-31_
+* We need support outside the range of the Unix epoch (1900-2039) and earlier than that of the Julian calendar (_-4713-01-01_).
+  * Existing libraries do not support dates outside of their range. Dates prior to 0 J are out of range in Python and in PostgreSQL, and are silently (erroneously) converted to 0 J by PHP. Underlying C libraries using `struct tm` do not work outside of Unix epoch range.
+
+Effectively, this means we had to create our own implementation of the R `decimal_date()` function, without recourse to underlying libraries.
+
+As such, the technique chosen here is to convert the specified date into a decimal year, without recourse to the underlying date/time libraries.
+* Dates are supplied in ISO 8601-like format and support positive and negative years, e.g. _-2000-01-01_ and _2000-01-01_ and _+2000-01-01_
+* The Gregorian calendar is treated as proleptic: 365 or 366 says, February 29 existing only when `year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)`
+* The returned decimal value represents the year, plus a decimal portion indicating "how far along" the year is at 12 noon on the given day. Keep in mind that since years vary between 365 and 336 days' length, the decimal "value" of a date may vary between years:
+  * Example: 1999 has 365 days, so 12 noon on January 1 would be _1999.001370_ and on December 31 would be _1999.998630_
+  * Example: 2000 has 366 days, so 12 noon on January 1 would be _2000.001366_ and on December 31 would be _2000.998634_
+* In the case of negative years (BCE dates) the decimal portion is "inverted" into days from December 31, since December of a BCE year is closer to the 0 mark.
+  * Example: Dec 31 2000 BCE is _-2000.001366_ and Jan 1 2000 BCE is _-2000.998634_
