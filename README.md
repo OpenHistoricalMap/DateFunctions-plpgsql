@@ -25,6 +25,16 @@ Example: `SELECT isodatetodecimaldate(2000-12-31)` returns _2000.998634_
 Example: `SELECT isodatetodecimaldate(-2000-01-01)` returns _-2000.998634_ Note that January for CE years is more negative than December, being further from the 0 origin.
 Example: `SELECT isodatetodecimaldate(-2000-12-31)` returns _-2000.001366_ Note that December for CE years is less negative than December, being closer to the 0 origin.
 
+* `(varchar) decimaldatetoisodate(datestring)`
+Parse a decimal date into its year, month, day and return an ISO-shaped date string representing that date.
+Example: `decimaldatetoisodate(2000.998634)` returns _2000-12-31_
+Example: `decimaldatetoisodate(1999.001370)` returns _1999-12-31_
+Example: `decimaldatetoisodate(-10191.998634)` returns _-10191-01-01_
+Example: `decimaldatetoisodate(-10191.001366)` returns _-10191-12-31_
+
+* `(integer array[3]) decimaldatetoyearmonthday(datestring)`
+Parse a decimal date into its year, month, day and return these as an array of 3 integers.
+
 * `(float) yday(year, month, day)`
 Return the day of the year which this date woud have been; similar to `yday` in other date implementations.
 Example: `yday(1900, 1, 1)` returns 1 since January 1 is the first day of the year.

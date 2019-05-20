@@ -436,6 +436,70 @@ LANGUAGE plpgsql;
 
 
 --
+-- decimaldatetoisodate(datestring)
+-- translate a decimal year into an ISO-shaped date string
+--
+
+CREATE OR REPLACE FUNCTION decimaldatetoisodate(
+    decimaldate DOUBLE PRECISION
+)
+RETURNS varchar AS $$
+BEGIN
+    RETURN decimaldatetoisodate(decimaldate::numeric);
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION decimaldatetoisodate(
+    decimaldate NUMERIC
+)
+RETURNS varchar AS $$
+DECLARE
+    yearint INTEGER;
+    monthint INTEGER;
+    dayint INTEGER;
+    yday INTEGER;
+    dayspassed INTEGER;
+    daysinyear INTEGER;
+    daysthismonth INTEGER;
+BEGIN
+    -- isolate the integer part of the year
+    IF decimaldate >= 0 THEN
+        yearint := FLOOR(decimaldate)::integer;
+    ELSE
+        yearint := CEIL(decimaldate)::integer;
+    END IF;
+
+    -- translate decimal portion into target yday
+    daysinyear := howmanydaysinyear(yearint);
+    yday = ROUND(1 + (daysinyear * (ABS(decimaldate) % 1)) - 0.5);
+    IF decimaldate < 0 THEN
+        yday = daysinyear - yday + 1;
+    END IF;
+
+    -- tall over whole months to see which month would contain this day
+    dayspassed = 0;
+    FOR mnum IN 1..12 LOOP
+        daysthismonth = howmanydaysinmonth(yearint, mnum);
+        IF dayspassed + daysthismonth < yday THEN
+            dayspassed = dayspassed + daysthismonth;
+        ELSE
+            monthint = mnum;
+            EXIT;
+        END IF;
+    END LOOP;
+
+    -- and the remaining days
+    dayint = yday - dayspassed;
+
+    -- concatenate and done
+    RETURN CONCAT(yearint::varchar, '-', LPAD(monthint::varchar, 2, '0'), '-', LPAD(dayint::varchar, 2, '0'));
+END;
+$$
+LANGUAGE plpgsql;
+
+
+--
 -- pad_date(datestring, startend)
 -- pad out a truncated date with only year or a month, to a full year-month-day date
 -- specify whether you want to pad it to the first day or last day of that year/month

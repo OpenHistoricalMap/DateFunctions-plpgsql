@@ -136,5 +136,31 @@ DO $$ BEGIN assert (   SELECT isodatetodecimaldate('-2000-12-31') = -2000.001366
 DO $$ BEGIN assert (   SELECT isodatetodecimaldate('-1000000-01-01') = -1000000.998634   );END;$$;
 DO $$ BEGIN assert (   SELECT isodatetodecimaldate('-1000000-12-31') = -1000000.001366   );END;$$;
 
+DO $$ BEGIN RAISE INFO 'Testing: decimaldatetoisodate()';END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(2000.001366) = '2000-01-01'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(1999.001370) = '1999-01-01'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(2000.998634) = '2000-12-31'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(1999.998630) = '1999-12-31'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(1999.497260) = '1999-07-01'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(1999.5) = '1999-07-02'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(2000.5) = '2000-07-02'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(-2000.998634) = '-2000-01-01'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(-2000.001366) = '-2000-12-31'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(-10191.998634) = '-10191-01-01'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(-10191.001366) = '-10191-12-31'   );END;$$;
+
+DO $$ BEGIN RAISE INFO 'Testing: isodatetodecimaldate() decimaldatetoisodate() back and forth';END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(isodatetodecimaldate('2000-12-01')) = '2000-12-01'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(isodatetodecimaldate('2000-12-31')) = '2000-12-31'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(isodatetodecimaldate('2000-02-29')) = '2000-02-29'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(isodatetodecimaldate('1999-12-01')) = '1999-12-01'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(isodatetodecimaldate('1999-12-31')) = '1999-12-31'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(isodatetodecimaldate('1999-02-29')) = '1999-02-29'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(isodatetodecimaldate('10191-06-30')) = '10191-06-30'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(isodatetodecimaldate('10191-07-31')) = '10191-07-31'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(isodatetodecimaldate('-10191-06-30')) = '-10191-06-30'   );END;$$;
+DO $$ BEGIN assert (   SELECT decimaldatetoisodate(isodatetodecimaldate('-10191-07-31')) = '-10191-07-31'   );END;$$;
+
+-- done!
 DO $$ BEGIN RAISE INFO 'All tests done.';END;$$;
 ROLLBACK;
