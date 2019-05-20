@@ -12,6 +12,11 @@ Unless stated otherwise, all functions presume a proleptic Gregorian calendar. T
 
 Unless stated otherwise, all functions are overloaded so they can accept year and month parameters as `integer` and/or `varchar` data types. This is indicated in the examples below, where we are capricious with passing numeric or string values.
 
+* `(varchar) pad_date(datelikestring varchar, startend varchar = 'start')`
+Pad an incomplete date, and return an ISO-formatted date string indicating the first or last day of the month (if a year and month were given) or of the year (if only a year were given). The `startend` is either **start** or else **end** indicating which "side of the bookend" to represent.
+Example: `SELECT pad_date('20000-02', 'end')` returns _20000-02-29_ since the year 20,000 CE would be a leap year.
+Example: `SELECT pad_date('-15232', 'start')` returns _-15232-01-01_ representing the first day of that year.
+
 * `(boolean) isleapyear(year)`
 Indicate whether the given year would be a leap year.
 Example: `SELECT isleapyear('-10191')` returns _false_ since the year 10,191 BCE would not have been a leap year.
@@ -24,10 +29,16 @@ Example: `SELECT howmanydaysinyear(-2000)` returns _366_ since 2,000 BCE would h
 Return the number of days in this month.
 Example: `SELECT howmanydaysinmonth('-2000', 2)` returns _29_ since 2000 BCE would have been a leap year.
 
-* `(varchar) pad_date(datelikestring varchar, startend varchar = 'start')`
-Pad an incomplete date, and return an ISO-formatted date string indicating the first or last day of the month (if a year and month were given) or of the year (if only a year were given). The `startend` is either **start** or else **end** indicating which "side of the bookend" to represent.
-Example: `SELECT pad_date('20000-02', 'end')` returns _20000-02-29_ since the year 20,000 CE would be a leap year.
-Example: `SELECT pad_date('-15232', 'start')` returns _-15232-01-01_ representing the first day of that year.
+* `(boolean) isvalidmonth(month)`
+Indicate whether whether the given month is a valid one, in the range 1 through 12.
+Example: `SELECT isvalidmonth('12')` return _true_.
+Example: `SELECT isvalidmonth(13)` return _false_.
+
+* `(boolean) isvalidmonthday(year, month, day)`
+Indicate whether whether the given day would have been a valid one, during the given year and month. That is, is >= 1 and the month had at least that many days in that year.
+Example: `SELECT isvalidmonthday(2000, 2, 29)` return _true_ because this was a leap year and February has 29 days.
+Example: `SELECT isvalidmonthday(-1999, 2, 29)` return _false_ because February would have had 28 days in this month.
+Example: `SELECT isvalidmonthday(2000, 1, 34)` return _false_ because January has 31 days.
 
 
 ### Year 0 and Subtracting Decimal Dates

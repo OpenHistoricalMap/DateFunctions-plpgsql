@@ -109,6 +109,132 @@ LANGUAGE plpgsql;
 
 
 --
+-- is the given month a valid one, 1-12?
+--
+
+CREATE OR REPLACE FUNCTION isvalidmonth(
+    monthstring VARCHAR
+)
+RETURNS boolean AS $$
+BEGIN
+    RETURN isvalidmonth(monthstring::integer);
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION isvalidmonth(
+    monthint INTEGER
+)
+RETURNS boolean AS $$
+BEGIN
+    RETURN monthint >=1 AND monthint <= 12;
+END;
+$$
+LANGUAGE plpgsql;
+
+
+--
+-- is the given day valid for the given month+year, did January have a 34th day?
+--
+
+CREATE OR REPLACE FUNCTION isvalidmonthday(
+    yearstring VARCHAR,
+    monthstring VARCHAR,
+    daystring VARCHAR
+)
+RETURNS boolean AS $$
+BEGIN
+    RETURN isvalidmonthday(yearstring::integer, monthstring::integer, daystring::integer);
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION isvalidmonthday(
+    yearstring VARCHAR,
+    monthstring VARCHAR,
+    dayint INTEGER
+)
+RETURNS boolean AS $$
+BEGIN
+    RETURN isvalidmonthday(yearstring::integer, monthstring::integer, dayint);
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION isvalidmonthday(
+    yearstring VARCHAR,
+    monthint INTEGER,
+    daystring VARCHAR
+)
+RETURNS boolean AS $$
+BEGIN
+    RETURN isvalidmonthday(yearstring::integer, monthint, daystring::integer);
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION isvalidmonthday(
+    yearstring VARCHAR,
+    monthint INTEGER,
+    dayint INTEGER
+)
+RETURNS boolean AS $$
+BEGIN
+    RETURN isvalidmonthday(yearstring::integer, monthint, dayint);
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION isvalidmonthday(
+    yearint INTEGER,
+    monthstring VARCHAR,
+    daystring VARCHAR
+)
+RETURNS boolean AS $$
+BEGIN
+    RETURN isvalidmonthday(yearint, monthstring::integer, daystring::integer);
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION isvalidmonthday(
+    yearint INTEGER,
+    monthstring VARCHAR,
+    dayint INTEGER
+)
+RETURNS boolean AS $$
+BEGIN
+    RETURN isvalidmonthday(yearint, monthstring::integer, dayint);
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION isvalidmonthday(
+    yearint INTEGER,
+    monthint INTEGER,
+    daystring VARCHAR
+)
+RETURNS boolean AS $$
+BEGIN
+    RETURN isvalidmonthday(yearint, monthint, daystring::integer);
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION isvalidmonthday(
+    yearint INTEGER,
+    monthint INTEGER,
+    dayint INTEGER
+)
+RETURNS boolean AS $$
+BEGIN
+    RETURN isvalidmonth(monthint) AND dayint > 0 AND dayint <= howmanydaysinmonth(yearint, monthint);
+END;
+$$
+LANGUAGE plpgsql;
+
+
+--
 -- pad_date(datestring, startend)
 -- pad out a truncated date with only year or a month, to a full year-month-day date
 -- specify whether you want to pad it to the first day or last day of that year/month
