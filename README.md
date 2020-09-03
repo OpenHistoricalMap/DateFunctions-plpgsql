@@ -21,9 +21,14 @@ Example: `SELECT pad_date('20000-02', 'end')` returns _20000-02-29_ since the ye
 
 Example: `SELECT pad_date('-15232', 'start')` returns _-15232-01-01_ representing the first day of that year.
 
-#### `(float) isodatetodecimaldate(datestring)`
+#### `(float) isodatetodecimaldate(datestring, trytofixinvalid)`
 
 Parse an ISO-shaped date string, and return the date in decimal representation.
+
+The optional parameter `trytofixinvalid` defines the handling for invalid dates such as _1917-28-31_ or _2020-13-31_
+* `NULL` (default) = an invalid date will raise an exception
+* `FALSE` = an invalid date will return NULL
+* `TRUE` = try hard to return a number; return the 1st of the month if the month is valid, or the year if even the month is invalid
 
 Example: `SELECT isodatetodecimaldate(2000-01-01)` returns _2000.001366_
 
@@ -32,6 +37,14 @@ Example: `SELECT isodatetodecimaldate(2000-12-31)` returns _2000.998634_
 Example: `SELECT isodatetodecimaldate(-2000-01-01)` returns _-2000.998634_ Note that January for CE years is more negative than December, being further from the 0 origin.
 
 Example: `SELECT isodatetodecimaldate(-2000-12-31)` returns _-2000.001366_ Note that December for CE years is less negative than December, being closer to the 0 origin.
+
+Example: `SELECT isodatetodecimaldate('1917-04-31')` results in an exception
+
+Example: `SELECT isodatetodecimaldate('1917-04-31', FALSE)` returns _NULL_
+
+Example: `SELECT isodatetodecimaldate('1917-04-31', TRUE)` returns _1917.247945_ for April 1
+
+Example: `SELECT isodatetodecimaldate('1917-13-32', TRUE)` returns _1917_ which is the year with 0 decimal portion
 
 #### `(varchar) decimaldatetoisodate(datestring)`
 

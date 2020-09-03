@@ -392,7 +392,8 @@ LANGUAGE plpgsql;
 --
 
 CREATE OR REPLACE FUNCTION isodatetodecimaldate(
-    datestring VARCHAR
+    datestring VARCHAR,
+    trytofixinvalid BOOLEAN DEFAULT NULL
 )
 RETURNS float AS $$
 DECLARE
@@ -410,8 +411,25 @@ BEGIN
     yearint := splitdate[1];
     monthint := splitdate[2];
     dayint := splitdate[3];
+
+    -- handle invalid dates e.g. April 31 or February 40
+    -- trytofixinvalid parameter sets the behavior
+    -- NULL (default) = invalid date is an exception
+    -- FALSE = return NULL
+    -- TRUE = be as lax as possible; try to extract the yearmonth or at least year, or return null if nothing's valid
     IF NOT isvalidmonthday(yearint, monthint, dayint) THEN
-        RAISE EXCEPTION 'Not a valid date %, %, %', yearint, monthint, dayint;
+        IF trytofixinvalid IS NULL THEN
+            RAISE EXCEPTION 'Not a valid date %, %, %', yearint, monthint, dayint USING ERRCODE = 'data_exception';
+        ELSIF NOT trytofixinvalid THEN
+            RAISE WARNING 'Not a valid date %, %, %', yearint, monthint, dayint;
+            RETURN NULL;
+        ELSE
+            RAISE WARNING 'Not a valid date %, %, %', yearint, monthint, dayint;
+            IF NOT isvalidmonth(monthint) THEN  -- not a valid month either, return just the year (which may be null if input was totally invalid)
+                RETURN yearint;
+            END IF;
+            dayint = 1;  -- valid year+month even if not the day, so set s=dayint=1 and proceed
+        END IF;
     END IF;
 
     -- this is the Nth day of a N-day-long year

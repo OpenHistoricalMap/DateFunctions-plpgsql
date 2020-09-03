@@ -3,17 +3,6 @@
 \set VERBOSITY terse
 BEGIN;
 
-DO $$ BEGIN RAISE INFO 'Testing: isvalidmonth()';END;$$;
-DO $$ BEGIN assert (   isvalidmonth(1)   );END;$$;
-DO $$ BEGIN assert (   isvalidmonth(7)   );END;$$;
-DO $$ BEGIN assert (   not isvalidmonth(19)   );END;$$;
-DO $$ BEGIN assert (   not isvalidmonth(-2)   );END;$$;
-DO $$ BEGIN assert (   not isvalidmonth('-2')   );END;$$;
-DO $$ BEGIN assert (   not isvalidmonth(0)   );END;$$;
-DO $$ BEGIN assert (   isvalidmonth('12')   );END;$$;
-DO $$ BEGIN assert (   isvalidmonth('1')   );END;$$;
-DO $$ BEGIN assert (   isvalidmonth('3')   );END;$$;
-
 DO $$ BEGIN RAISE INFO 'Testing: isleapyear()';END;$$;
 DO $$ BEGIN assert (   SELECT not isleapyear('1900')   );END;$$;
 DO $$ BEGIN assert (   SELECT not isleapyear(1900)   );END;$$;
@@ -52,6 +41,17 @@ DO $$ BEGIN assert (   howmanydaysinmonth('-29700', '2') = 28   );END;$$;
 DO $$ BEGIN assert (   howmanydaysinmonth(29700, 2) = 28   );END;$$;
 DO $$ BEGIN assert (   howmanydaysinmonth('-29700', 2) = 28   );END;$$;
 DO $$ BEGIN assert (   howmanydaysinmonth(29700, '2') = 28   );END;$$;
+
+DO $$ BEGIN RAISE INFO 'Testing: isvalidmonth()';END;$$;
+DO $$ BEGIN assert (   isvalidmonth(1)   );END;$$;
+DO $$ BEGIN assert (   isvalidmonth(7)   );END;$$;
+DO $$ BEGIN assert (   not isvalidmonth(19)   );END;$$;
+DO $$ BEGIN assert (   not isvalidmonth(-2)   );END;$$;
+DO $$ BEGIN assert (   not isvalidmonth('-2')   );END;$$;
+DO $$ BEGIN assert (   not isvalidmonth(0)   );END;$$;
+DO $$ BEGIN assert (   isvalidmonth('12')   );END;$$;
+DO $$ BEGIN assert (   isvalidmonth('1')   );END;$$;
+DO $$ BEGIN assert (   isvalidmonth('3')   );END;$$;
 
 DO $$ BEGIN RAISE INFO 'Testing: isvalidmonthday()';END;$$;
 DO $$ BEGIN assert (   SELECT isvalidmonthday(2000, 2, 29)   );END;$$;
@@ -135,6 +135,16 @@ DO $$ BEGIN assert (   SELECT isodatetodecimaldate('-2000-01-01') = -2000.998634
 DO $$ BEGIN assert (   SELECT isodatetodecimaldate('-2000-12-31') = -2000.001366   );END;$$;
 DO $$ BEGIN assert (   SELECT isodatetodecimaldate('-1000000-01-01') = -1000000.998634   );END;$$;
 DO $$ BEGIN assert (   SELECT isodatetodecimaldate('-1000000-12-31') = -1000000.001366   );END;$$;
+
+DO $$ BEGIN RAISE INFO 'Testing: isodatetodecimaldate() with invalid input';END;$$;
+DO $$ BEGIN assert (   SELECT isodatetodecimaldate('1917-04-31', FALSE) IS NULL   );END;$$;
+DO $$ BEGIN assert (   SELECT isodatetodecimaldate('1917-04-31', TRUE) = 1917.247945   );END;$$;
+DO $$ BEGIN assert (   SELECT isodatetodecimaldate('1917-13-32', TRUE) = 1917   );END;$$;
+DO $$ BEGIN  -- this should raise an exception
+    SELECT isodatetodecimaldate('1917-04-31');
+	EXCEPTION WHEN data_exception THEN RETURN;
+    assert(false);
+END; $$ LANGUAGE plpgsql;
 
 DO $$ BEGIN RAISE INFO 'Testing: decimaldatetoisodate()';END;$$;
 DO $$ BEGIN assert (   SELECT decimaldatetoisodate(2000.001366) = '2000-01-01'   );END;$$;
