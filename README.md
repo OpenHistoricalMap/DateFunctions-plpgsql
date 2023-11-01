@@ -123,15 +123,15 @@ This follows ISO 8601 in that year 0000 is 1 BCE, -0001 is 2 BCE, and so on. Exp
 
 ```
 // positive dates are what you expect
-console.log( decimaldate.iso2dec('2000-01-01') )  // 2000.001366
-console.log( decimaldate.dec2iso(2000.001366) )  // 2000-01-01
+SELECT decimaldate.iso2dec('2000-01-01');  -- 2000.001366
+SELECT decimaldate.dec2iso(2000.001366);  -- 2000-01-01
 
 // off by 1: 0 = 1, -1 = -2, and so on
-console.log( decimaldate.iso2dec('-2000-01-01') )  // -1999.998634
-console.log( decimaldate.dec2iso(-2000.998634) )  // -2001-01-01
+SELECT decimaldate.iso2dec('-2000-01-01');  -- -1999.998634
+SELECT decimaldate.dec2iso(-2000.998634));  -- -2001-01-01
 
 // but it unpacks the same
-decimaldate.dec2iso(decimaldate.iso2dec('-1000-06-30'))  // -1000-06-30
+SELECT decimaldate.dec2iso(decimaldate.iso2dec('-1000-06-30'))  // -1000-06-30
 ```
 
 
