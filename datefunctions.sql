@@ -23,6 +23,12 @@ CREATE OR REPLACE FUNCTION isleapyear(
 )
 RETURNS boolean AS $$
 BEGIN
+    -- BCE; there is no 0 so leap years are -1, -5, -9, ..., -2001, -2005, ...
+    -- just add 1 to the year to correct for this, for this purpose
+    IF yearint <= 0 THEN
+        yearint := yearint + 1;
+    END IF;
+
     RETURN yearint % 4 = 0 AND (yearint % 100 != 0 OR yearint % 400 = 0);
 END;
 $$
@@ -339,14 +345,14 @@ BEGIN
     END IF;
 
     -- accumulate the completed months
-    dayspassed = 0;
+    dayspassed := 0;
     FOR mnum IN 1..12 LOOP
         EXIT WHEN mnum >= monthint;
-        dayspassed = dayspassed + howmanydaysinmonth(yearint, mnum);
+        dayspassed := dayspassed + howmanydaysinmonth(yearint, mnum);
     END LOOP;
 
     -- add the days from the current month
-    dayspassed = dayspassed + dayint;
+    dayspassed := dayspassed + dayint;
 
     -- and Bob's your uncle
     RETURN dayspassed;
@@ -428,26 +434,33 @@ BEGIN
             IF NOT isvalidmonth(monthint) THEN  -- not a valid month either, return just the year (which may be null if input was totally invalid)
                 RETURN yearint;
             END IF;
-            dayint = 1;  -- valid year+month even if not the day, so set s=dayint=1 and proceed
+            dayint := 1;  -- valid year+month even if not the day, so set s=dayint=1 and proceed
         END IF;
+    END IF;
+
+    -- ISO 8601 shift year<=0 by 1, 0=1BCE, -1=2BCE; we want proper negative integer
+    IF yearint <= 0 THEN
+        yearint := yearint - 1;
     END IF;
 
     -- this is the Nth day of a N-day-long year
     -- for decimal purposes, subtract 0.5 days to force noon on the day (Jan 1 = 0.5)
-    daynumber := yday(yearint, monthint, dayint)::float - 0.5;
-    daysinyear := howmanydaysinyear(yearint);
-
     -- divide to get a decimal; invert this if year is <0
     -- larger negative value = further from 0, right? Jan 1 -1000 is -1000.999 but Jan 1 1000 is 1000.001
-    decibit = daynumber / daysinyear;
-    IF yearint >= 0 THEN
-        decimaldate = yearint::float + decibit;
+    daynumber := yday(yearint, monthint, dayint)::float - 0.5;
+    daysinyear := howmanydaysinyear(yearint);
+    decibit := daynumber / daysinyear;
+
+    IF yearint < 0 THEN
+        -- ISO 8601 shift year<=0 by 1, 0=1BCE, -1=2BCE; we want string version
+        -- so it's 1 to get from the artificially-inflated integer (string 0000 => -1 for math, +1 to get back to 0)
+        decimaldate := 1 + 1 + yearint::float - (1 - decibit);
     ELSE
-        decimaldate = yearint::float - (1 - decibit);
+        decimaldate := yearint::float + decibit;
     END IF;
 
-    -- standardize on 6 decimals, that's more than plenty for 1 part in 366
-    RETURN ROUND(decimaldate::numeric, 6);
+    -- standardize on 5 decimals, that's more than plenty for 1 part in 366
+    RETURN ROUND(decimaldate::numeric, 5);
 END;
 $$
 LANGUAGE plpgsql;
@@ -473,45 +486,71 @@ CREATE OR REPLACE FUNCTION decimaldatetoisodate(
 )
 RETURNS varchar AS $$
 DECLARE
+    truedecdate NUMERIC;
     yearint INTEGER;
     monthint INTEGER;
     dayint INTEGER;
-    yday INTEGER;
+    targetday NUMERIC;
     dayspassed INTEGER;
-    daysinyear INTEGER;
-    daysthismonth INTEGER;
+    dty INTEGER;
+    dtm INTEGER;
+    ispositive BOOLEAN;
+    yearstring VARCHAR;
+    monthstring VARCHAR;
+    daystring VARCHAR;
 BEGIN
-    -- isolate the integer part of the year
-    IF decimaldate >= 0 THEN
-        yearint := FLOOR(decimaldate)::integer;
+    -- remove the artificial +1 that we add to make positive dates look intuitive
+    truedecdate := decimaldate - 1;
+    ispositive := truedecdate > 0;
+
+    -- get the integer year
+    IF ispositive THEN
+        yearint := FLOOR(truedecdate) + 1;
     ELSE
-        yearint := CEIL(decimaldate)::integer;
+        yearint := -ABS(FLOOR(truedecdate))::integer;
     END IF;
 
-    -- translate decimal portion into target yday
-    daysinyear := howmanydaysinyear(yearint);
-    yday = ROUND(1 + (daysinyear * (ABS(decimaldate) % 1)) - 0.5);
-    IF decimaldate < 0 THEN
-        yday = daysinyear - yday + 1;
+    -- how many days in year X decimal portion = number of days into the year
+    -- if it's <0 then we count backward from the end of the year, instead of forward into the year
+    dty := howmanydaysinyear(yearint);
+    targetday := dty::float * (abs(truedecdate) % 1)::float;
+    IF ispositive THEN
+        targetday := CEIL(targetday);
+    ELSE
+        targetday := dty - FLOOR(targetday);
     END IF;
 
-    -- tall over whole months to see which month would contain this day
-    dayspassed = 0;
-    FOR mnum IN 1..12 LOOP
-        daysthismonth = howmanydaysinmonth(yearint, mnum);
-        IF dayspassed + daysthismonth < yday THEN
-            dayspassed = dayspassed + daysthismonth;
+    -- count up days months at a time, until we reach our target month
+    -- then the remainder (days) is the day of that month
+    dayspassed := 0;
+    monthint := 1;
+
+    FOR mi IN 1..12 LOOP
+        dtm := howmanydaysinmonth(yearint, mi);
+        IF dayspassed + dtm < targetday THEN
+            dayspassed := dayspassed + dtm;
         ELSE
-            monthint = mnum;
+            monthint = mi;
             EXIT;
         END IF;
     END LOOP;
+    dayint := targetday - dayspassed;
 
-    -- and the remaining days
-    dayint = yday - dayspassed;
+    -- make string output
+    -- months and day as 2 digits
+    -- ISO 8601 shift year<=0 by 1, 0=1BCE, -1=2BCE
+    monthstring := LPAD(monthint::varchar, 2, '0');
+    daystring := LPAD(dayint::varchar, 2, '0');
+    IF yearint > 0 THEN
+        yearstring := LPAD(yearint::varchar, 4, '0');  -- just the year as 4 digits
+    ELSEIF yearint = -1 THEN
+        yearstring := LPAD((yearint + 1)::varchar, 4, '0');  -- BCE offset by 1 but do not add a - sign
+    ELSE
+        yearstring := CONCAT('-', LPAD(ABS(yearint + 1)::varchar, 4, '0'));  -- BCE offset by 1 and add  - sign
+    END IF;
 
     -- concatenate and done
-    RETURN CONCAT(yearint::varchar, '-', LPAD(monthint::varchar, 2, '0'), '-', LPAD(dayint::varchar, 2, '0'));
+    RETURN CONCAT(yearstring, '-', monthstring, '-', daystring)::varchar;
 END;
 $$
 LANGUAGE plpgsql;
@@ -540,7 +579,7 @@ BEGIN
     END IF;
 
     -- trim leading + which is accepted per ISO but not really useful
-    datestring = REGEXP_REPLACE(datestring, '^\+', '');
+    datestring := REGEXP_REPLACE(datestring, '^\+', '');
 
     -- leave blanks as-is, as well as already-well-formatted dates
     IF datestring is null OR datestring = '' THEN
@@ -568,7 +607,7 @@ BEGIN
     IF datestring ~* '^\-?\d+\-\d\d$' AND startend = 'end' THEN
         yearstring := SUBSTR(datestring, 1, LENGTH(datestring) - 3);
         monthstring := SUBSTR(datestring, LENGTH(datestring) - 1, 2);
-        lastday = LPAD(howmanydaysinmonth(yearstring, monthstring)::varchar, 2, '0');
+        lastday := LPAD(howmanydaysinmonth(yearstring, monthstring)::varchar, 2, '0');
         RETURN CONCAT(datestring, '-', lastday);
     END IF;
 
