@@ -117,13 +117,51 @@ Example: `SELECT isvalidmonthday(-1999, 2, 29)` return _false_ because February 
 Example: `SELECT isvalidmonthday(2000, 1, 34)` return _false_ because January has 31 days.
 
 
-### Year 0 and Subtracting Decimal Dates
+### Dates Less Than 0001-01-01
 
-The Gregorian calendar has no year 0. The morning after Dec 31 of 1 BCE would be Jan 1 of 1 CE, without a span of two years having passed (-1 to 0, and 0 to +1).
+This follows ISO 8601 in that year 0000 is 1 BCE, -0001 is 2 BCE, and so on. Expect negative dates to seem off by 1.
 
-This is important to keep in mind when trying to subtract one date from another, and crossing the CE/BCE boundary: **You must subtract 2 years from the mathematical difference to find the real difference.**
+```
+// positive dates are what you expect
+SELECT decimaldate.iso2dec('2000-01-01');  -- 2000.001366
+SELECT decimaldate.dec2iso(2000.001366);  -- 2000-01-01
 
-This is a known issue with calculating differences across the BCE/CE boundary, and is not novel to this expression of dates as decimal format.
+// off by 1: 0 = 1, -1 = -2, and so on
+SELECT decimaldate.iso2dec('-2000-01-01');  -- -1999.998634
+SELECT decimaldate.dec2iso(-2000.998634));  -- -2001-01-01
+
+// but it unpacks the same
+SELECT decimaldate.dec2iso(decimaldate.iso2dec('-1000-06-30'))  // -1000-06-30
+```
+
+
+### Year 0 and the Number Line
+
+The Gregorian calendar has no year 0, and the morning after Dec 31 of 1 BCE would be Jan 1 of 1 CE.
+
+On a number line from BCE to CE, the value 0 would appear at the cusp between December 31 1 BCE (0000-12-31) and January 1 1 CE (0001-01-01).
+
+Decimaldate can be thought of as an offset on that number line.
+- +0.25 would be 3 months forward into 1 CE (early April)
+- +1.5 would be a year and a half forward from 0, so early July of 2 CE
+- -0.5 would be half a year backward into 1 BCE (early October)
+- -1.5 would be a year and a half backward from 0, so early July of 2 BCE
+
+However, decimaldate shifts the origin by 1 year to make positive dates look more intuitive. While it is mathematically correct that +2022.9 is November 2023, people reading decimal dates visually just didn't like the numbers looking like that. As such, +1 is added to decimal dates.
+
+| true decimal | decimaldate | iso | comment |
+| --- | --- | --- | --- |
+| -1.998633 | -0.998633 | -0001-01-01 | first day of 2 CE, most negative (highest decimal portion) day of the year |
+| -1.001366 | -0.001366 | -0001-12-31 | the last day of 2 BCE, least negative (lowest decimal portion) day of the year |
+| -0.998633 | 0.001367 | 0000-01-01 | first day of 1 BCE, most negative (highest decimal portion) day of the year |
+| -0.5 | 0.5 | 0000-07-02 | middle of 1 BCE, 6 months before the 0 origin of Jan 1 1 CE |
+| -0.001366 | 0.998634 | 0000-12-31 | the last day of 1 BCE, least negative (lowest decimal portion) day of the year |
+| 0 | 1 | cusp | the cusp between Dec 31 1 BCE (0000-12-31) and Jan 1 1 CE (0001-01-01) |
+| +0.001369 | +1.001369 | 0001-01-01 | the first day of 1 CE, least positive day of the year |
+| +0.5 | +1.5 | 0001-07-01 | middle of 1 CE, 6 months after the 0 origin of Jan 1 1 CE |
+| +0.998631 | +1.998631 | 0001-12-31 | last day of 1 CE, most positive day of the year |
+| +1.001369 | +2.001369 | 0002-01-01 | the first day of 2 CE, least positive day of the year |
+| +1.998631 | +2.998631 | 0002-12-31 | last day of 2 CE, most positive day of the year |
 
 
 ### Our Use Case and Technical Challenges
