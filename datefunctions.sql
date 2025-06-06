@@ -13,7 +13,7 @@ CREATE OR REPLACE FUNCTION isleapyear(
 )
 RETURNS boolean AS $$
 BEGIN
-    RETURN isleapyear(yearstring::integer);
+    RETURN public.isleapyear(yearstring::integer);
 END;
 $$
 LANGUAGE plpgsql;
@@ -39,7 +39,7 @@ CREATE OR REPLACE FUNCTION howmanydaysinyear(
 )
 RETURNS integer AS $$
 BEGIN
-    RETURN howmanydaysinyear(yearstring::integer);
+    RETURN public.howmanydaysinyear(yearstring::integer);
 END;
 $$
 LANGUAGE plpgsql;
@@ -49,7 +49,7 @@ CREATE OR REPLACE FUNCTION howmanydaysinyear(
 )
 RETURNS integer AS $$
 BEGIN
-    IF isleapyear(yearint) THEN
+    IF public.isleapyear(yearint) THEN
         RETURN 366;
     ELSE
         RETURN 365;
@@ -70,7 +70,7 @@ CREATE OR REPLACE FUNCTION howmanydaysinmonth(
 )
 RETURNS integer AS $$
 BEGIN
-    RETURN howmanydaysinmonth(yearstring::integer, monthstring::integer);
+    RETURN public.howmanydaysinmonth(yearstring::integer, monthstring::integer);
 END;
 $$
 LANGUAGE plpgsql;
@@ -81,7 +81,7 @@ CREATE OR REPLACE FUNCTION howmanydaysinmonth(
 )
 RETURNS integer AS $$
 BEGIN
-    RETURN howmanydaysinmonth(yearstring::integer, monthint);
+    RETURN public.howmanydaysinmonth(yearstring::integer, monthint);
 END;
 $$
 LANGUAGE plpgsql;
@@ -92,7 +92,7 @@ CREATE OR REPLACE FUNCTION howmanydaysinmonth(
 )
 RETURNS integer AS $$
 BEGIN
-    RETURN howmanydaysinmonth(yearint, monthstring::integer);
+    RETURN public.howmanydaysinmonth(yearint, monthstring::integer);
 END;
 $$
 LANGUAGE plpgsql;
@@ -106,7 +106,7 @@ BEGIN
     RETURN CASE
         WHEN monthint IN (1, 3, 5, 7, 8, 10, 12) THEN 31
         WHEN monthint IN (4, 6, 9, 11) THEN 30
-        WHEN monthint = 2 AND isleapyear(yearint) THEN 29
+        WHEN monthint = 2 AND public.isleapyear(yearint) THEN 29
         WHEN monthint = 2 THEN 28
     END;
 END;
@@ -124,7 +124,7 @@ CREATE OR REPLACE FUNCTION isvalidmonth(
 )
 RETURNS boolean AS $$
 BEGIN
-    RETURN isvalidmonth(monthstring::integer);
+    RETURN public.isvalidmonth(monthstring::integer);
 END;
 $$
 LANGUAGE plpgsql;
@@ -152,7 +152,7 @@ CREATE OR REPLACE FUNCTION isvalidmonthday(
 )
 RETURNS boolean AS $$
 BEGIN
-    RETURN isvalidmonthday(yearstring::integer, monthstring::integer, daystring::integer);
+    RETURN public.isvalidmonthday(yearstring::integer, monthstring::integer, daystring::integer);
 END;
 $$
 LANGUAGE plpgsql;
@@ -164,7 +164,7 @@ CREATE OR REPLACE FUNCTION isvalidmonthday(
 )
 RETURNS boolean AS $$
 BEGIN
-    RETURN isvalidmonthday(yearstring::integer, monthstring::integer, dayint);
+    RETURN public.isvalidmonthday(yearstring::integer, monthstring::integer, dayint);
 END;
 $$
 LANGUAGE plpgsql;
@@ -176,7 +176,7 @@ CREATE OR REPLACE FUNCTION isvalidmonthday(
 )
 RETURNS boolean AS $$
 BEGIN
-    RETURN isvalidmonthday(yearstring::integer, monthint, daystring::integer);
+    RETURN public.isvalidmonthday(yearstring::integer, monthint, daystring::integer);
 END;
 $$
 LANGUAGE plpgsql;
@@ -188,7 +188,7 @@ CREATE OR REPLACE FUNCTION isvalidmonthday(
 )
 RETURNS boolean AS $$
 BEGIN
-    RETURN isvalidmonthday(yearstring::integer, monthint, dayint);
+    RETURN public.isvalidmonthday(yearstring::integer, monthint, dayint);
 END;
 $$
 LANGUAGE plpgsql;
@@ -200,7 +200,7 @@ CREATE OR REPLACE FUNCTION isvalidmonthday(
 )
 RETURNS boolean AS $$
 BEGIN
-    RETURN isvalidmonthday(yearint, monthstring::integer, daystring::integer);
+    RETURN public.isvalidmonthday(yearint, monthstring::integer, daystring::integer);
 END;
 $$
 LANGUAGE plpgsql;
@@ -212,7 +212,7 @@ CREATE OR REPLACE FUNCTION isvalidmonthday(
 )
 RETURNS boolean AS $$
 BEGIN
-    RETURN isvalidmonthday(yearint, monthstring::integer, dayint);
+    RETURN public.isvalidmonthday(yearint, monthstring::integer, dayint);
 END;
 $$
 LANGUAGE plpgsql;
@@ -224,7 +224,7 @@ CREATE OR REPLACE FUNCTION isvalidmonthday(
 )
 RETURNS boolean AS $$
 BEGIN
-    RETURN isvalidmonthday(yearint, monthint, daystring::integer);
+    RETURN public.isvalidmonthday(yearint, monthint, daystring::integer);
 END;
 $$
 LANGUAGE plpgsql;
@@ -236,7 +236,7 @@ CREATE OR REPLACE FUNCTION isvalidmonthday(
 )
 RETURNS boolean AS $$
 BEGIN
-    RETURN isvalidmonth(monthint) AND dayint > 0 AND dayint <= howmanydaysinmonth(yearint, monthint);
+    RETURN public.isvalidmonth(monthint) AND dayint > 0 AND dayint <= public.howmanydaysinmonth(yearint, monthint);
 END;
 $$
 LANGUAGE plpgsql;
@@ -247,91 +247,91 @@ LANGUAGE plpgsql;
 -- return the numeric day of the year aka "yday" e.g. 1 for January 1 and 365 for Dec 31
 --
 
-CREATE OR REPLACE FUNCTION yday (
+CREATE OR REPLACE FUNCTION yday(
     yearstring VARCHAR,
     monthstring VARCHAR,
     daystring VARCHAR
 )
 RETURNS integer AS $$
 BEGIN
-    RETURN yday(yearstring::integer, monthstring::integer, daystring::integer);
+    RETURN public.yday(yearstring::integer, monthstring::integer, daystring::integer);
 END;
 $$
 LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION yday (
+CREATE OR REPLACE FUNCTION yday(
     yearstring VARCHAR,
     monthstring VARCHAR,
     dayint INTEGER
 )
 RETURNS integer AS $$
 BEGIN
-    RETURN yday(yearstring::integer, monthstring::integer, dayint);
+    RETURN public.yday(yearstring::integer, monthstring::integer, dayint);
 END;
 $$
 LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION yday (
+CREATE OR REPLACE FUNCTION yday(
     yearstring VARCHAR,
     monthint INTEGER,
     daystring VARCHAR
 )
 RETURNS integer AS $$
 BEGIN
-    RETURN yday(yearstring::integer, monthint, daystring::integer);
+    RETURN public.yday(yearstring::integer, monthint, daystring::integer);
 END;
 $$
 LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION yday (
+CREATE OR REPLACE FUNCTION yday(
     yearstring VARCHAR,
     monthint INTEGER,
     dayint INTEGER
 )
 RETURNS integer AS $$
 BEGIN
-    RETURN yday(yearstring::integer, monthint, dayint);
+    RETURN public.yday(yearstring::integer, monthint, dayint);
 END;
 $$
 LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION yday (
+CREATE OR REPLACE FUNCTION yday(
     yearint INTEGER,
     monthstring VARCHAR,
     daystring VARCHAR
 )
 RETURNS integer AS $$
 BEGIN
-    RETURN yday(yearint, monthstring::integer, daystring::integer);
+    RETURN public.yday(yearint, monthstring::integer, daystring::integer);
 END;
 $$
 LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION yday (
+CREATE OR REPLACE FUNCTION yday(
     yearint INTEGER,
     monthstring VARCHAR,
     dayint INTEGER
 )
 RETURNS integer AS $$
 BEGIN
-    RETURN yday(yearint, monthstring::integer, dayint);
+    RETURN public.yday(yearint, monthstring::integer, dayint);
 END;
 $$
 LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION yday (
+CREATE OR REPLACE FUNCTION yday(
     yearint INTEGER,
     monthint INTEGER,
     daystring VARCHAR
 )
 RETURNS integer AS $$
 BEGIN
-    RETURN yday(yearint, monthint, daystring::integer);
+    RETURN public.yday(yearint, monthint, daystring::integer);
 END;
 $$
 LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION yday (
+CREATE OR REPLACE FUNCTION yday(
     yearint INTEGER,
     monthint INTEGER,
     dayint INTEGER
@@ -340,7 +340,7 @@ RETURNS integer AS $$
 DECLARE
     dayspassed INTEGER;
 BEGIN
-    IF NOT isvalidmonthday(yearint, monthint, dayint) THEN
+    IF NOT public.isvalidmonthday(yearint, monthint, dayint) THEN
         RAISE EXCEPTION 'Not a valid date %, %, %', yearint, monthint, dayint;
     END IF;
 
@@ -348,7 +348,7 @@ BEGIN
     dayspassed := 0;
     FOR mnum IN 1..12 LOOP
         EXIT WHEN mnum >= monthint;
-        dayspassed := dayspassed + howmanydaysinmonth(yearint, mnum);
+        dayspassed := dayspassed + public.howmanydaysinmonth(yearint, mnum);
     END LOOP;
 
     -- add the days from the current month
@@ -413,7 +413,7 @@ DECLARE
     decimaldate FLOAT;
 BEGIN
     -- split up the date into three integers
-    splitdate := splitdatestring(datestring);
+    splitdate := public.splitdatestring(datestring);
     yearint := splitdate[1];
     monthint := splitdate[2];
     dayint := splitdate[3];
@@ -423,7 +423,7 @@ BEGIN
     -- NULL (default) = invalid date is an exception
     -- FALSE = return NULL
     -- TRUE = be as lax as possible; try to extract the yearmonth or at least year, or return null if nothing's valid
-    IF NOT isvalidmonthday(yearint, monthint, dayint) THEN
+    IF NOT public.isvalidmonthday(yearint, monthint, dayint) THEN
         IF trytofixinvalid IS NULL THEN
             RAISE EXCEPTION 'Not a valid date %, %, %', yearint, monthint, dayint USING ERRCODE = 'data_exception';
         ELSIF NOT trytofixinvalid THEN
@@ -431,7 +431,7 @@ BEGIN
             RETURN NULL;
         ELSE
             RAISE WARNING 'Not a valid date %, %, %', yearint, monthint, dayint;
-            IF NOT isvalidmonth(monthint) THEN  -- not a valid month either, return just the year (which may be null if input was totally invalid)
+            IF NOT public.isvalidmonth(monthint) THEN  -- not a valid month either, return just the year (which may be null if input was totally invalid)
                 RETURN yearint;
             END IF;
             dayint := 1;  -- valid year+month even if not the day, so set s=dayint=1 and proceed
@@ -447,8 +447,8 @@ BEGIN
     -- for decimal purposes, subtract 0.5 days to force noon on the day (Jan 1 = 0.5)
     -- divide to get a decimal; invert this if year is <0
     -- larger negative value = further from 0, right? Jan 1 -1000 is -1000.999 but Jan 1 1000 is 1000.001
-    daynumber := yday(yearint, monthint, dayint)::float - 0.5;
-    daysinyear := howmanydaysinyear(yearint);
+    daynumber := public.yday(yearint, monthint, dayint)::float - 0.5;
+    daysinyear := public.howmanydaysinyear(yearint);
     decibit := daynumber / daysinyear;
 
     IF yearint < 0 THEN
@@ -476,7 +476,7 @@ CREATE OR REPLACE FUNCTION decimaldatetoisodate(
 )
 RETURNS varchar AS $$
 BEGIN
-    RETURN decimaldatetoisodate(decimaldate::numeric);
+    RETURN public.decimaldatetoisodate(decimaldate::numeric);
 END;
 $$
 LANGUAGE plpgsql;
@@ -512,7 +512,7 @@ BEGIN
 
     -- how many days in year X decimal portion = number of days into the year
     -- if it's <0 then we count backward from the end of the year, instead of forward into the year
-    dty := howmanydaysinyear(yearint);
+    dty := public.howmanydaysinyear(yearint);
     targetday := dty::float * (abs(truedecdate) % 1)::float;
     IF ispositive THEN
         targetday := CEIL(targetday);
@@ -526,7 +526,7 @@ BEGIN
     monthint := 1;
 
     FOR mi IN 1..12 LOOP
-        dtm := howmanydaysinmonth(yearint, mi);
+        dtm := public.howmanydaysinmonth(yearint, mi);
         IF dayspassed + dtm < targetday THEN
             dayspassed := dayspassed + dtm;
         ELSE
@@ -562,7 +562,7 @@ LANGUAGE plpgsql;
 -- specify whether you want to pad it to the first day or last day of that year/month
 --
 
-CREATE OR REPLACE FUNCTION pad_date (
+CREATE OR REPLACE FUNCTION pad_date(
     datestring VARCHAR,  -- the input date string, ISO-8601 shaped e.g. -2000-06-23
     startend VARCHAR default 'start'  -- pad to the start or end of this month/year?
 )
@@ -607,7 +607,7 @@ BEGIN
     IF datestring ~* '^\-?\d+\-\d\d$' AND startend = 'end' THEN
         yearstring := SUBSTR(datestring, 1, LENGTH(datestring) - 3);
         monthstring := SUBSTR(datestring, LENGTH(datestring) - 1, 2);
-        lastday := LPAD(howmanydaysinmonth(yearstring, monthstring)::varchar, 2, '0');
+        lastday := LPAD(public.howmanydaysinmonth(yearstring, monthstring)::varchar, 2, '0');
         RETURN CONCAT(datestring, '-', lastday);
     END IF;
 
