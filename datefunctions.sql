@@ -612,7 +612,7 @@ BEGIN
     END IF;
 
     -- if we got here then it must be something else completely malformed; return nothing
-    RAISE INFO 'pad_date(%) skipping malformed value', datestring;
+    -- RAISE INFO 'pad_date(%) skipping malformed value', datestring;
     RETURN ''::varchar;
 END;
 $$
