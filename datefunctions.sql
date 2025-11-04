@@ -427,10 +427,10 @@ BEGIN
         IF trytofixinvalid IS NULL THEN
             RAISE EXCEPTION 'Not a valid date %, %, %', yearint, monthint, dayint USING ERRCODE = 'data_exception';
         ELSIF NOT trytofixinvalid THEN
-            RAISE WARNING 'Not a valid date %, %, %', yearint, monthint, dayint;
+            -- RAISE WARNING 'Not a valid date %, %, %', yearint, monthint, dayint;
             RETURN NULL;
         ELSE
-            RAISE WARNING 'Not a valid date %, %, %', yearint, monthint, dayint;
+            -- RAISE WARNING 'Not a valid date %, %, %', yearint, monthint, dayint;
             IF NOT public.isvalidmonth(monthint) THEN  -- not a valid month either, return just the year (which may be null if input was totally invalid)
                 RETURN yearint;
             END IF;
